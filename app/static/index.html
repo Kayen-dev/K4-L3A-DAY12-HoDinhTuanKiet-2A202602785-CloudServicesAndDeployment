@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Bảng điều khiển Day 12 Production Agent">
+  <title>Day 12 Agent · Service Console</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #102434;
+      --muted: #5f6f7a;
+      --paper: #f3f0e8;
+      --surface: #fffdf7;
+      --line: #c9c4b8;
+      --navy: #15354a;
+      --cyan: #0d7c83;
+      --cyan-soft: #d8efec;
+      --amber: #bd681c;
+      --amber-soft: #fff0d8;
+      --danger: #ad343e;
+      --danger-soft: #f8e2e2;
+      --shadow: 8px 8px 0 rgba(21, 53, 74, 0.12);
+      --radius: 3px;
+      --mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { overflow-x: hidden; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      color: var(--ink);
+      background-color: var(--paper);
+      font-family: var(--sans);
+      line-height: 1.5;
+    }
+
+    button, input, textarea { font: inherit; }
+    a { color: inherit; }
+
+    a:focus-visible,
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible {
+      outline: 3px solid #ef9c46;
+      outline-offset: 3px;
+    }
+
+    .shell {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 48px;
+    }
+
+    .masthead {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid var(--navy);
+    }
+
+    .eyebrow {
+      margin: 0 0 9px;
+      color: var(--cyan);
+      font: 700 0.76rem/1.2 var(--mono);
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 720px;
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 4.3rem);
+      font-weight: 750;
+      letter-spacing: -0.06em;
+      line-height: 0.98;
+    }
+
+    h1 span { color: var(--cyan); }
+
+    .identity {
+      flex: 0 0 auto;
+      padding: 10px 12px;
+      border: 1px solid var(--navy);
+      background: var(--surface);
+      font: 0.74rem/1.5 var(--mono);
+      text-align: right;
+      box-shadow: 4px 4px 0 rgba(21, 53, 74, 0.1);
+    }
+
+    .intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+      gap: 24px;
+      align-items: end;
+      padding: 28px 0;
+    }
+
+    .intro p {
+      max-width: 680px;
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 2vw, 1.2rem);
+    }
+
+    .flow {
+      padding: 12px 14px;
+      border-left: 4px solid var(--amber);
+      background: var(--amber-soft);
+      color: #653913 !important;
+      font: 0.76rem/1.65 var(--mono) !important;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 26px;
+    }
+
+    .status-card,
+    .panel {
+      border: 1px solid var(--navy);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .status-card {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 13px;
+      align-items: center;
+      min-height: 88px;
+      padding: 17px 18px;
+    }
+
+    .status-dot {
+      width: 13px;
+      height: 13px;
+      border: 2px solid currentColor;
+      border-radius: 50%;
+      color: var(--muted);
+      background: transparent;
+    }
+
+    [data-state="ok"] .status-dot { color: var(--cyan); background: var(--cyan); }
+    [data-state="error"] .status-dot { color: var(--danger); background: var(--danger); }
+
+    .status-label { margin: 0; font-size: 0.95rem; font-weight: 750; }
+    .status-card > div { min-width: 0; }
+    .status-detail { margin: 2px 0 0; color: var(--muted); font: 0.73rem/1.35 var(--mono); overflow-wrap: anywhere; }
+    .status-code { color: var(--muted); font: 700 0.8rem/1 var(--mono); }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+      gap: 22px;
+    }
+
+    .panel { overflow: hidden; }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 54px;
+      padding: 12px 18px;
+      color: #fff;
+      background: var(--navy);
+    }
+
+    .panel-head h2 { margin: 0; font-size: 0.95rem; letter-spacing: 0.025em; }
+
+    .method {
+      padding: 4px 7px;
+      border: 1px solid rgba(255, 255, 255, 0.46);
+      font: 700 0.68rem/1 var(--mono);
+    }
+
+    form { padding: 20px; }
+    .field { margin-bottom: 17px; }
+
+    label { display: block; margin-bottom: 7px; font-size: 0.82rem; font-weight: 750; }
+    label small { color: var(--muted); font-weight: 500; }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 1px solid #75838b;
+      border-radius: 2px;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    input { min-height: 46px; padding: 10px 12px; }
+    textarea { min-height: 138px; padding: 12px; resize: vertical; }
+    .hint { margin: 7px 0 0; color: var(--muted); font-size: 0.74rem; }
+
+    .submit {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      width: 100%;
+      border: 1px solid var(--navy);
+      border-radius: 2px;
+      color: #fff;
+      background: var(--cyan);
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 4px 4px 0 var(--navy);
+      transition: transform 120ms ease, box-shadow 120ms ease;
+    }
+
+    .submit:hover { transform: translate(-1px, -1px); box-shadow: 6px 6px 0 var(--navy); }
+    .submit:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--navy); }
+    .submit:disabled { cursor: wait; opacity: 0.65; }
+
+    .output {
+      display: flex;
+      min-height: 376px;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .output-empty { margin: auto; color: var(--muted); text-align: center; }
+    .output-empty code { font-family: var(--mono); }
+    .answer { display: none; flex: 1; }
+    .answer.visible { display: block; }
+
+    .answer-text {
+      margin: 0 0 20px;
+      padding: 16px;
+      border-left: 4px solid var(--cyan);
+      background: var(--cyan-soft);
+      white-space: pre-wrap;
+    }
+
+    .answer-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin: 0;
+    }
+
+    .answer-meta div { min-width: 0; padding: 10px; border: 1px solid var(--line); background: #fff; }
+    .answer-meta dt { color: var(--muted); font: 0.66rem/1.3 var(--mono); text-transform: uppercase; }
+    .answer-meta dd { overflow: hidden; margin: 5px 0 0; font: 700 0.78rem/1.35 var(--mono); text-overflow: ellipsis; }
+
+    .error-box {
+      display: none;
+      padding: 14px;
+      border: 1px solid var(--danger);
+      background: var(--danger-soft);
+      color: #74212a;
+      white-space: pre-wrap;
+    }
+
+    .error-box.visible { display: block; }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 30px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font: 0.72rem/1.5 var(--mono);
+    }
+
+    footer nav { display: flex; gap: 18px; }
+    footer a:hover { color: var(--cyan); }
+
+    @media (max-width: 760px) {
+      .shell { width: min(calc(100% - 22px), 680px); padding-top: 18px; }
+      .masthead, footer { flex-direction: column; }
+      .identity { text-align: left; }
+      .intro, .workspace, .status-grid { grid-template-columns: 1fr; }
+      .status-card { grid-template-columns: auto minmax(0, 1fr) auto; }
+      .panel { min-width: 0; }
+      .answer-meta { grid-template-columns: 1fr; }
+      .output { min-height: 300px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">Cloud services / Lab 12</p>
+        <h1>Production Agent <span>Console</span></h1>
+      </div>
+      <div class="identity" aria-label="Thông tin sinh viên">
+        Hồ Đình Tuấn Kiệt<br>
+        2A202602785
+      </div>
+    </header>
+
+    <section class="intro" aria-labelledby="intro-title">
+      <p id="intro-title">Giao diện tối giản để quan sát liveness, readiness và gửi một request có xác thực tới agent.</p>
+      <p class="flow">AUTH → RATE LIMIT → COST GUARD<br>REDIS HISTORY → MOCK LLM → JSON LOG</p>
+    </section>
+
+    <section class="status-grid" aria-label="Trạng thái service">
+      <article class="status-card" id="health-card" data-state="pending">
+        <span class="status-dot" aria-hidden="true"></span>
+        <div><p class="status-label">Process /health</p><p class="status-detail" id="health-detail">Đang kiểm tra liveness…</p></div>
+        <span class="status-code" id="health-code">—</span>
+      </article>
+      <article class="status-card" id="ready-card" data-state="pending">
+        <span class="status-dot" aria-hidden="true"></span>
+        <div><p class="status-label">Redis /ready</p><p class="status-detail" id="ready-detail">Đang kiểm tra readiness…</p></div>
+        <span class="status-code" id="ready-code">—</span>
+      </article>
+    </section>
+
+    <section class="workspace" aria-label="Thử API">
+      <article class="panel">
+        <header class="panel-head"><h2>Request builder</h2><span class="method">POST /ask</span></header>
+        <form id="ask-form">
+          <div class="field">
+            <label for="api-key">API key <small>· bắt buộc</small></label>
+            <input id="api-key" name="api-key" type="password" autocomplete="off" required placeholder="Nhập AGENT_API_KEY">
+            <p class="hint">Khóa chỉ dùng cho request hiện tại và không được lưu.</p>
+          </div>
+          <div class="field">
+            <label for="user-id">User ID</label>
+            <input id="user-id" name="user-id" value="sv01" maxlength="100">
+          </div>
+          <div class="field">
+            <label for="question">Câu hỏi <small>· tối đa 2.000 ký tự</small></label>
+            <textarea id="question" name="question" maxlength="2000" required placeholder="Ví dụ: Docker multi-stage build là gì?"></textarea>
+          </div>
+          <button class="submit" id="submit" type="submit">Gửi tới agent</button>
+        </form>
+      </article>
+
+      <article class="panel">
+        <header class="panel-head"><h2>Agent response</h2><span class="method" id="response-code">WAITING</span></header>
+        <div class="output" aria-live="polite" aria-atomic="true">
+          <div class="output-empty" id="output-empty"><p>Chưa có response.</p><code>Chọn câu hỏi và gửi request ở bên trái.</code></div>
+          <div class="answer" id="answer">
+            <p class="answer-text" id="answer-text"></p>
+            <dl class="answer-meta">
+              <div><dt>User</dt><dd id="meta-user">—</dd></div>
+              <div><dt>History</dt><dd id="meta-history">—</dd></div>
+              <div><dt>Tokens in / out</dt><dd id="meta-tokens">—</dd></div>
+              <div><dt>Cost USD</dt><dd id="meta-cost">—</dd></div>
+            </dl>
+          </div>
+          <div class="error-box" id="error-box" role="alert"></div>
+        </div>
+      </article>
+    </section>
+
+    <footer>
+      <span>day12-agent · v1.0.0 · FastAPI + Redis</span>
+      <nav aria-label="Tài liệu API"><a href="/docs">Swagger docs</a><a href="/openapi.json">OpenAPI JSON</a></nav>
+    </footer>
+  </main>
+
+  <script>
+    const byId = (id) => document.getElementById(id);
+
+    async function parseResponse(response) {
+      const text = await response.text();
+      if (!text) return {};
+      try { return JSON.parse(text); } catch { return { detail: text }; }
+    }
+
+    async function checkProbe(name, path) {
+      const card = byId(`${name}-card`);
+      const detail = byId(`${name}-detail`);
+      const code = byId(`${name}-code`);
+      try {
+        const response = await fetch(path, { cache: "no-store" });
+        const data = await parseResponse(response);
+        card.dataset.state = response.ok ? "ok" : "error";
+        code.textContent = String(response.status);
+        detail.textContent = response.ok
+          ? (name === "health" ? "Process đang hoạt động" : "Redis đã kết nối")
+          : (data.detail || data.status || "Probe thất bại");
+      } catch {
+        card.dataset.state = "error";
+        code.textContent = "ERR";
+        detail.textContent = "Không thể kết nối tới endpoint";
+      }
+    }
+
+    const form = byId("ask-form");
+    const submit = byId("submit");
+    const empty = byId("output-empty");
+    const answer = byId("answer");
+    const errorBox = byId("error-box");
+    const responseCode = byId("response-code");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      submit.disabled = true;
+      submit.textContent = "Đang gửi…";
+      empty.hidden = true;
+      answer.classList.remove("visible");
+      errorBox.classList.remove("visible");
+      responseCode.textContent = "PENDING";
+
+      try {
+        const response = await fetch("/ask", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-API-Key": byId("api-key").value,
+            "X-User-Id": byId("user-id").value || "anonymous",
+          },
+          body: JSON.stringify({ question: byId("question").value }),
+        });
+        const data = await parseResponse(response);
+        responseCode.textContent = String(response.status);
+
+        if (!response.ok) {
+          errorBox.textContent = `Request thất bại (${response.status})\n${data.detail || data.status || "Lỗi không xác định"}`;
+          errorBox.classList.add("visible");
+          return;
+        }
+
+        byId("answer-text").textContent = data.answer;
+        byId("meta-user").textContent = data.user_id;
+        byId("meta-history").textContent = `${data.history_length} message`;
+        byId("meta-tokens").textContent = `${data.tokens.in} / ${data.tokens.out}`;
+        byId("meta-cost").textContent = Number(data.cost_usd).toFixed(8);
+        answer.classList.add("visible");
+      } catch (error) {
+        responseCode.textContent = "ERR";
+        errorBox.textContent = `Không thể gửi request\n${error.message}`;
+        errorBox.classList.add("visible");
+      } finally {
+        submit.disabled = false;
+        submit.textContent = "Gửi tới agent";
+      }
+    });
+
+    checkProbe("health", "/health");
+    checkProbe("ready", "/ready");
+  </script>
+</body>
+</html>
